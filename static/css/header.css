@@ -1,0 +1,49 @@
+/* Navigation */
+header {
+  background-color: var(--bg-carte);
+  border-bottom: 1px solid var(--border-color);
+}
+
+header .barre-navigation {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem var(--gap);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+header .logo {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--primary);
+  text-decoration: none;
+}
+
+.logo img,
+h2 img {
+  vertical-align: middle;
+  display: inline-block;
+}
+
+.navigation-compte {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.navigation-compte a {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--text-main);
+  text-decoration: none;
+  padding: 0.3rem 0.8rem;
+  border-radius: var(--radius);
+}
+
+
+.navigation-compte .bouton-inscription {
+  background-color: var(--primary);
+  color: #fff;
+  border: none;
+}

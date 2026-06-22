@@ -1,0 +1,94 @@
+{% macro icone_meteo(libelle, taille=52, meteo_icone=None) %}
+  {% set icone = meteo_icone or 'not-available-fill' %}
+  <img src="{{ url_for('static', filename='icons/' ~ icone ~ '.svg') }}" width="{{ taille }}" height="{{ taille }}" alt="" aria-hidden="true">
+{% endmacro %}
+
+{% macro render_suggestions(evenement, suggestions_date, layout='index') %}
+  {% if layout == 'index' %}
+    {# Index page (mini layout): 2 slots (before, after) #}
+    {% set avant = suggestions_date.get('avant_soleil') if (suggestions_date.get('avant_soleil') and suggestions_date.get('avant_proche') and suggestions_date.get('avant_soleil').date == suggestions_date.get('avant_proche').date) else suggestions_date.get('avant_proche') %}
+    {% if not avant and suggestions_date.get('avant_soleil') %}
+      {% set avant = suggestions_date.get('avant_soleil') %}
+    {% endif %}
+
+    {% set apres = suggestions_date.get('apres_soleil') if (suggestions_date.get('apres_soleil') and suggestions_date.get('apres_proche') and suggestions_date.get('apres_soleil').date == suggestions_date.get('apres_proche').date) else suggestions_date.get('apres_proche') %}
+    {% if not apres and suggestions_date.get('apres_soleil') %}
+      {% set apres = suggestions_date.get('apres_soleil') %}
+    {% endif %}
+
+    {% for option in [avant, apres] %}
+      {% if option %}
+        <span class="evenement-carte__suggestion-slot">
+          <button class="mini-suggestion-date {{ option.classe_index }}" type="button" onclick="changerDateEvenement({{ evenement.id }}, '{{ option.date }}')" aria-label="Changer la date vers {{ option.date }}">
+            <span class="suggestion-date__icone">{{ icone_meteo(option.meteo.icone_label, 14, meteo_icone=option.meteo.icone) }}</span>
+            <span class="mini-suggestion-date__texte">{{ option.jours }}j</span>
+          </button>
+        </span>
+      {% else %}
+        <span class="evenement-carte__suggestion-slot" aria-hidden="true"></span>
+      {% endif %}
+    {% endfor %}
+
+  {% else %}
+    {# Edit page (large layout): 4 slots #}
+    {% set avant_soleil = suggestions_date.get('avant_soleil') %}
+    {% set avant_proche = suggestions_date.get('avant_proche') %}
+    {% set apres_soleil = suggestions_date.get('apres_soleil') %}
+    {% set apres_proche = suggestions_date.get('apres_proche') %}
+
+    {% set slot_gauche_1 = None %}
+    {% set slot_gauche_2 = None %}
+    {% set slot_droite_1 = None %}
+    {% set slot_droite_2 = None %}
+
+    {% if avant_proche and avant_soleil and avant_proche.date != avant_soleil.date %}
+      {% set slot_gauche_1 = avant_soleil %}
+      {% set slot_gauche_2 = avant_proche %}
+    {% elif avant_soleil %}
+      {% set slot_gauche_1 = avant_soleil %}
+    {% elif avant_proche %}
+      {% set slot_gauche_1 = avant_proche %}
+    {% endif %}
+
+    {% if apres_proche and apres_soleil and apres_proche.date != apres_soleil.date %}
+      {% set slot_droite_1 = apres_proche %}
+      {% set slot_droite_2 = apres_soleil %}
+    {% elif apres_soleil %}
+      {% set slot_droite_1 = apres_soleil %}
+    {% elif apres_proche %}
+      {% set slot_droite_1 = apres_proche %}
+    {% endif %}
+
+    {% if slot_gauche_1 %}
+      <button class="suggestion-date {{ slot_gauche_1.classe_index }} {% if not slot_gauche_2 %}suggestion-date--double{% endif %}" type="button" onclick="changerDateEvenement({{ evenement.id }}, '{{ slot_gauche_1.date }}')" aria-label="Changer la date vers {{ slot_gauche_1.date }}">
+        {{ slot_gauche_1.jours }}j
+        <span class="suggestion-date__icone">{{ icone_meteo(slot_gauche_1.meteo.icone_label, 18, meteo_icone=slot_gauche_1.meteo.icone) }}</span>
+      </button>
+    {% else %}
+      <span class="suggestion-date suggestion-date--double suggestion-date--vide" aria-hidden="true"></span>
+    {% endif %}
+
+    {% if slot_gauche_2 %}
+      <button class="suggestion-date {{ slot_gauche_2.classe_index }}" type="button" onclick="changerDateEvenement({{ evenement.id }}, '{{ slot_gauche_2.date }}')" aria-label="Changer la date vers {{ slot_gauche_2.date }}">
+        {{ slot_gauche_2.jours }}j
+        <span class="suggestion-date__icone">{{ icone_meteo(slot_gauche_2.meteo.icone_label, 18, meteo_icone=slot_gauche_2.meteo.icone) }}</span>
+      </button>
+    {% endif %}
+
+    {% if slot_droite_1 %}
+      <button class="suggestion-date {{ slot_droite_1.classe_index }} {% if not slot_droite_2 %}suggestion-date--double{% endif %}" type="button" onclick="changerDateEvenement({{ evenement.id }}, '{{ slot_droite_1.date }}')" aria-label="Changer la date vers {{ slot_droite_1.date }}">
+        {{ slot_droite_1.jours }}j
+        <span class="suggestion-date__icone">{{ icone_meteo(slot_droite_1.meteo.icone_label, 18, meteo_icone=slot_droite_1.meteo.icone) }}</span>
+      </button>
+    {% else %}
+      <span class="suggestion-date suggestion-date--double suggestion-date--vide" aria-hidden="true"></span>
+    {% endif %}
+
+    {% if slot_droite_2 %}
+      <button class="suggestion-date {{ slot_droite_2.classe_index }}" type="button" onclick="changerDateEvenement({{ evenement.id }}, '{{ slot_droite_2.date }}')" aria-label="Changer la date vers {{ slot_droite_2.date }}">
+        {{ slot_droite_2.jours }}j
+        <span class="suggestion-date__icone">{{ icone_meteo(slot_droite_2.meteo.icone_label, 18, meteo_icone=slot_droite_2.meteo.icone) }}</span>
+      </button>
+    {% endif %}
+  {% endif %}
+{% endmacro %}

@@ -1,0 +1,32 @@
+@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;500;600;700&display=swap');
+@import url('./header.css');
+@import url('./page.css');
+@import url('./footer.css');
+
+:root {
+  --primary: #3c87b3;
+  --secondary: #2ba27c;
+  --primary-light-rgba: rgba(235, 243, 248, 0.85);
+  --secondary-hover: #228263;
+  --bg-body: #f8fafc;
+  --bg-carte: #ffffff;
+  --text-main: #334155;
+  --text-heading: #1e293b;
+  --border-color: #e2e8f0;
+
+  --radius: 6px;
+  --gap: 1.5rem;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: "Baloo 2", sans-serif;
+  background-color: var(--bg-body);
+  color: var(--text-main);
+  line-height: 1.6;
+}

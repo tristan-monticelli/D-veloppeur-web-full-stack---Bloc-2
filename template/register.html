@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Créer un compte — Météo Sentinelle</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+</head>
+
+<body>
+
+    <header>
+        <div class="barre-navigation">
+            <a href="/" class="logo">⛅ Météo Sentinelle</a>
+            <nav class="navigation-compte" aria-label="Compte">
+                <a href="/login">Se connecter</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="page-auth">
+        <div class="auth-carte">
+            <h1>Créer un compte</h1>
+            <p class="sous-titre-auth">Rejoignez Météo Sentinelle pour gérer vos événements.</p>
+
+            {# Messages utiles : champs invalides ou email déjà utilisé. #}
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <p class="message message--{{ category }}" role="alert">{{ message }}</p>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <form action="/register" method="POST">
+                <input type="hidden" name="next" value="{{ next | default('/') }}">
+                <div class="champ-auth">
+                    <label for="reg-prenom">Prénom</label>
+                    <input id="reg-prenom" name="prenom" type="text" placeholder="Jean" value="{{ form.get('prenom', '') if form is defined else '' }}" required autocomplete="given-name">
+                </div>
+                <div class="champ-auth">
+                    <label for="reg-email">Email</label>
+                    <input id="reg-email" name="email" type="email" placeholder="vous@exemple.com" value="{{ form.get('email', '') if form is defined else '' }}" required autocomplete="email">
+                </div>
+                <div class="champ-auth">
+                    <label for="reg-password">Mot de passe</label>
+                    <input id="reg-password" name="password" type="password" placeholder="Au moins 8 caractères" required autocomplete="new-password">
+                </div>
+                <div class="champ-auth">
+                    <label for="reg-confirm">Confirmer le mot de passe</label>
+                    <input id="reg-confirm" name="password_confirm" type="password" placeholder="Répétez le mot de passe" required autocomplete="new-password">
+                </div>
+                <button class="bouton" type="submit">Créer mon compte</button>
+            </form>
+
+            <p class="pied-auth">
+                Déjà un compte ? <a href="/login?next={{ next | default('/') }}">Se connecter</a>
+            </p>
+        </div>
+    </main>
+
+    <footer>
+        <p>© 2026 Météo Sentinelle — Planifiez en toute sérénité</p>
+    </footer>
+
+</body>
+</html>

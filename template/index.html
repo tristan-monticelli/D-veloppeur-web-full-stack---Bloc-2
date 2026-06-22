@@ -1,0 +1,189 @@
+{% from 'macros.html' import icone_meteo, render_suggestions %}
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="index, follow">
+    <meta name="description" content="Planifiez vos événements et recevez une alerte email si la météo est défavorable.">
+    <meta property="og:title" content="Météo Sentinelle — Planifiez en toute sérénité">
+    <meta property="og:description" content="Planifiez vos événements et recevez une alerte email si la météo est défavorable.">
+    <meta property="og:type" content="website">
+    <meta property="og:locale" content="fr_FR">
+    <meta property="og:url" content="{{ request.url_root.rstrip('/') }}">
+    <meta property="og:image" content="{{ url_for('static', filename='image/cloud.jpg', _external=True) }}">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Météo Sentinelle — Planifiez en toute sérénité">
+    <meta name="twitter:description" content="Planifiez vos événements et recevez une alerte email si la météo est défavorable.">
+    <meta name="twitter:image" content="{{ url_for('static', filename='image/cloud.jpg', _external=True) }}">
+    <link rel="canonical" href="{{ request.url_root.rstrip('/') }}">
+    <title>Météo Sentinelle — Planifiez en toute sérénité</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+</head>
+
+<body>
+
+    <header>
+        <div class="barre-navigation">
+            <a href="/" class="logo">
+                <img src="{{ url_for('static', filename='icons/partly-cloudy-day-fill.svg') }}" width="28" height="28" alt="" aria-hidden="true">
+                Météo Sentinelle
+            </a>
+            <nav class="navigation-compte" aria-label="Compte">
+                {% if session.user_id %}
+                    <a href="/logout">Se déconnecter</a>
+                {% else %}
+                    <a href="/login">Se connecter</a>
+                    <a href="/register" class="bouton-inscription">Créer un compte</a>
+                {% endif %}
+            </nav>
+        </div>
+    </header>
+
+    <main>
+    {# ── Bannière principale. ── #}
+    <section class="banniere-principale" aria-labelledby="titre-banniere">
+        <div class="banniere__contenu">
+            <div class="banniere__texte">
+                <h1 id="titre-banniere">Planifiez sereinement</h1>
+                <p>Planifiez sereinement et envoyez vos messages facilement.</p>
+
+                {# ── Aperçu rapide des conditions météo possibles. ── #}
+                <div class="apercu-meteo">
+                    <div class="condition-meteo">
+                        <img src="{{ url_for('static', filename='icons/clear-day-fill.svg') }}" width="56" height="56" alt="" aria-hidden="true">
+                        <span>Soleil</span>
+                    </div>
+                    <div class="condition-meteo">
+                        <img src="{{ url_for('static', filename='icons/partly-cloudy-day-fill.svg') }}" width="56" height="56" alt="" aria-hidden="true">
+                        <span>Nuageux</span>
+                    </div>
+                    <div class="condition-meteo">
+                        <img src="{{ url_for('static', filename='icons/overcast-day-fill.svg') }}" width="56" height="56" alt="" aria-hidden="true">
+                        <span>Couvert</span>
+                    </div>
+                    <div class="condition-meteo">
+                        <img src="{{ url_for('static', filename='icons/rain-fill.svg') }}" width="56" height="56" alt="" aria-hidden="true">
+                        <span>Pluie</span>
+                    </div>
+                    <div class="condition-meteo">
+                        <img src="{{ url_for('static', filename='icons/thunderstorms-fill.svg') }}" width="56" height="56" alt="" aria-hidden="true">
+                        <span>Orage</span>
+                    </div>
+                    <div class="condition-meteo">
+                        <img src="{{ url_for('static', filename='icons/hurricane-fill.svg') }}" width="56" height="56" alt="" aria-hidden="true">
+                        <span>Ouragan</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="formulaire-planification">
+                <h2>
+                    <img src="{{ url_for('static', filename='icons/barometer-fill.svg') }}" width="40" height="40" alt="" aria-hidden="true">
+                    Planifier un événement
+                </h2>
+                <form action="/planifier" method="POST">
+                    <div>
+                        <label for="ev-nom">Nom de l'événement</label>
+                        <input id="ev-nom" name="nom" type="text" placeholder="Ex : Barbecue familial" value="{{ brouillon_evenement.nom | default('') }}" required autocomplete="off">
+                    </div>
+                    <div>
+                        <label for="ev-date">Date</label>
+                        <input id="ev-date" name="date" type="date" value="{{ brouillon_evenement.date | default('') }}" required>
+                    </div>
+                    <div>
+                        <label for="ev-ville">Ville</label>
+                        <input id="ev-ville" name="ville" type="text" placeholder="Ex : Paris" value="{{ brouillon_evenement.ville | default('') }}" required autocomplete="off">
+                    </div>
+                    <button class="bouton" type="submit">Planifier</button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    {# ── Événements planifiés sous la bannière. ── #}
+    <section class="section-evenements" aria-labelledby="titre-events">
+        <h2 id="titre-events">
+            <img src="{{ url_for('static', filename='icons/barometer-fill.svg') }}" width="26" height="26" alt="" aria-hidden="true">
+            Événements planifiés
+        </h2>
+
+        <ul class="grille-evenements" aria-label="Liste des événements" {% if not evenements %}style="display: none;"{% endif %}>
+            {% for evenement in evenements %}
+                <li class="carte" data-event-id="{{ evenement.id }}">
+                    <article class="carte__contenu">
+                        <h3 class="carte-entete">{{ evenement.nom }}</h3>
+                        <div class="carte-contenu" aria-label="{{ evenement.meteo_icone_label }}">
+                            <span class="material-icons" aria-hidden="true" data-meteo-icon>
+                                    {{ icone_meteo(evenement.meteo_icone_label, 52, meteo_icone=evenement.meteo_icone) }}
+                            </span>
+                            <div class="description-principale" data-meteo-label>{{ evenement.meteo_icone_label }}</div>
+                            <time class="description-principale" datetime="{{ evenement.date }}" data-event-date>{{ evenement.date_affichee }}</time>
+                            <span class="description-principale">{{ evenement.ville }}</span>
+                        </div>
+                        <div class="evenement-carte__actions" role="group" aria-label="Actions événement">
+                            <span class="evenement-carte__suggestions-wrapper" data-suggestions-wrapper style="display: flex; gap: 0.18rem; margin: 0; padding: 0;">
+                                {{ render_suggestions(evenement, evenement.suggestions_date, layout='index') }}
+                            </span>
+                            <form class="evenement-carte__formulaire-action" action="/events/{{ evenement.id }}/edit" method="get">
+                                <button class="evenement-carte__bouton-action" type="submit" aria-label="Modifier l’événement">
+                                    <img src="{{ url_for('static', filename='icons/edit-2.svg') }}" width="16" height="16" alt="" aria-hidden="true">
+                                </button>
+                            </form>
+                            <form class="evenement-carte__formulaire-action" action="/events/{{ evenement.id }}/notify" method="post">
+                                <button class="evenement-carte__bouton-action evenement-carte__bouton-texte" type="button" data-confirm-modal data-confirm-title="Envoyer un email" data-confirm-description="Saisissez un message à envoyer aux destinataires." data-no-mail-hidden="true" aria-label="Envoyer un email">
+                                    <img src="{{ url_for('static', filename='icons/mail.svg') }}" width="16" height="16" alt="" aria-hidden="true">
+                                </button>
+                            </form>
+                            <form class="evenement-carte__formulaire-action" action="/events/{{ evenement.id }}/delete" method="post">
+                                <input type="hidden" name="send_notification" value="0">
+                                <input type="hidden" name="destinataires" value="{{ evenement.email }}">
+                                <button class="evenement-carte__bouton-action" type="button" data-confirm-modal data-confirm-title="Supprimer l'événement" data-confirm-description="Confirmez-vous la suppression de cette carte ?" aria-label="Supprimer l’événement">
+                                    <img src="{{ url_for('static', filename='icons/trash-2.svg') }}" width="16" height="16" alt="" aria-hidden="true">
+                                </button>
+                            </form>
+                        </div>
+                    </article>
+                </li>
+            {% endfor %}
+        </ul>
+        <p class="evenements-vide" aria-live="polite" {% if evenements %}style="display: none;"{% endif %}>
+            Aucun événement planifié pour le moment.<br>
+            Planifiez votre premier événement avec le formulaire ci-dessus.
+        </p>
+    </section>
+    </main>
+
+    <dialog id="action-modal" class="modal" aria-labelledby="action-modal-title" aria-describedby="action-modal-description">
+        <form method="dialog" class="modal__content">
+            <p id="action-modal-title"></p>
+            <p id="action-modal-description"></p>
+            <div class="champ-auth" id="modal-textarea-container" style="margin-top: 1rem; display: flex; flex-direction: column; gap: 0.3rem;">
+                <label for="modal-message" style="font-size: 0.9rem; font-weight: 600; color: var(--text-heading);">Votre message (optionnel) :</label>
+                <textarea id="modal-message" name="message" placeholder="Saisissez un message..." style="border: 1px solid #cbd5e1; border-radius: var(--radius); padding: 0.55rem 0.75rem; font-family: inherit; font-size: 0.95rem; color: var(--text-heading); resize: vertical; min-height: 80px;"></textarea>
+            </div>
+            <div class="modal__actions">
+                <button type="button" class="bouton bouton--ghost" id="action-modal-cancel">Annuler</button>
+                <button type="button" class="bouton" id="action-modal-no-mail">Ne pas envoyer</button>
+                <button type="button" class="bouton" id="action-modal-with-mail">Envoyer un mail</button>
+            </div>
+        </form>
+    </dialog>
+
+    <script>
+        window.MeteoEventUI = {
+            flashes: {{ get_flashed_messages(with_categories=true)|tojson }}
+        };
+    </script>
+    <script src="{{ url_for('static', filename='js/events-ui.js') }}" defer></script>
+
+    <footer>
+        <p>
+            <img src="{{ url_for('static', filename='icons/celsius-fill.svg') }}" width="18" height="18" alt="" aria-hidden="true">
+            © 2026 Météo Sentinelle — Planifiez en toute sérénité
+        </p>
+    </footer>
+
+</body>
+</html>

@@ -1,0 +1,8 @@
+/* Pied de page */
+footer {
+  text-align: center;
+  padding: 2.5rem var(--gap);
+  background: var(--text-heading);
+  color: #cbd5e1;
+  font-size: 0.95rem;
+}

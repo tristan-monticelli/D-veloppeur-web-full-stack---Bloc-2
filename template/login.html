@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Se connecter — Météo Sentinelle</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+</head>
+
+<body>
+
+    <header>
+        <div class="barre-navigation">
+            <a href="/" class="logo">
+                <img src="{{ url_for('static', filename='icons/partly-cloudy-day-fill.svg') }}" width="28" height="28" alt="" aria-hidden="true">
+                Météo Sentinelle
+            </a>
+            <nav class="navigation-compte" aria-label="Compte">
+                <a href="/register">Créer un compte</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="page-auth">
+        <div class="auth-carte">
+            <h1>Se connecter</h1>
+            <p class="sous-titre-auth">Ravi de vous revoir.</p>
+
+            {# Messages utiles : erreurs de connexion ou accès protégé. #}
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <p class="message message--{{ category }}" role="alert">{{ message }}</p>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <form action="/login" method="POST">
+                <input type="hidden" name="next" value="{{ next | default('/') }}">
+                <div class="champ-auth">
+                    <label for="login-email">Email</label>
+                    <input id="login-email" name="email" type="email" placeholder="vous@exemple.com" required autocomplete="email">
+                </div>
+                <div class="champ-auth">
+                    <label for="login-password">Mot de passe</label>
+                    <input id="login-password" name="password" type="password" placeholder="Votre mot de passe" required autocomplete="current-password">
+                </div>
+                <button class="bouton" type="submit">Se connecter</button>
+            </form>
+
+            <p class="pied-auth">
+                Pas encore de compte ? <a href="/register?next={{ next | default('/') }}">Créer un compte</a>
+            </p>
+        </div>
+    </main>
+
+    <footer>
+        <p>© 2026 Météo Sentinelle — Planifiez en toute sérénité</p>
+    </footer>
+
+</body>
+</html>

@@ -1,66 +1,4 @@
 (function () {
-  const appState = window.MeteoEventUI || {};
-
-  function showToast(message, type = 'success') {
-    if (type === 'error') {
-      return;
-    }
-
-    let container = document.querySelector('.toast-container');
-    if (!container) {
-      container = document.createElement('div');
-      container.className = 'toast-container';
-      document.body.appendChild(container);
-    }
-
-    const toast = document.createElement('div');
-    toast.className = `toast toast--${type}`;
-
-    let emoji = 'ℹ️';
-    if (type === 'success') emoji = '✅';
-    if (type === 'error') emoji = '❌';
-
-    toast.innerHTML = `
-      <span class="toast__icon">${emoji}</span>
-      <div class="toast__content"></div>
-      <button class="toast__close" aria-label="Fermer">&times;</button>
-      <div class="toast__progress"></div>
-    `;
-    toast.querySelector('.toast__content').textContent = message;
-    container.appendChild(toast);
-
-    const closeBtn = toast.querySelector('.toast__close');
-    const dismiss = () => {
-      if (!toast.parentNode) return;
-      toast.style.animation = 'toast-slide-out 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards';
-      toast.addEventListener('animationend', () => {
-        toast.remove();
-        if (container.children.length === 0) {
-          container.remove();
-        }
-      });
-    };
-
-    closeBtn.addEventListener('click', dismiss);
-    setTimeout(dismiss, 4000);
-  }
-
-  function renderFlashes() {
-    const messages = Array.isArray(appState.flashes) ? appState.flashes : [];
-    for (const item of messages) {
-      if (!item || !item[0] || !item[1]) {
-        continue;
-      }
-      const category = item[0];
-      const message = item[1];
-      if (category === 'error') {
-        continue;
-      }
-      const type = category === 'error' ? 'error' : category === 'success' ? 'success' : 'info';
-      showToast(message, type);
-    }
-  }
-
   function collectFormData(form, sendNotification) {
     const formData = new FormData();
     formData.append('send_notification', sendNotification ? '1' : '0');
@@ -75,14 +13,13 @@
     return formData;
   }
 
-  async function handleJsonAction(eventTarget, sendNotification) {
-    const form = eventTarget.closest('form');
+  async function handleFormAction(form, sendNotification) {
     if (!form) {
       return;
     }
 
     const action = form.getAttribute('action') || '';
-    const sendNotificationButton = typeof sendNotification === 'boolean' ? sendNotification : eventTarget.dataset.sendNotification === '1';
+    const sendNotificationButton = Boolean(sendNotification);
     const targetForDelete = action.endsWith('/delete');
     const targetForNotify = action.endsWith('/notify');
 
@@ -105,7 +42,8 @@
 
       champNotification.value = sendNotificationButton ? '1' : '0';
       champMessage.value = document.getElementById('modal-message')?.value || '';
-      return form.submit();
+      form.submit();
+      return true;
     }
 
     try {
@@ -117,8 +55,6 @@
 
       const data = await response.json();
       if (data.success) {
-        showToast(data.message, 'success');
-
         if (targetForDelete) {
           const match = action.match(/\/events\/(\d+)\/delete/);
           const eventId = match ? match[1] : null;
@@ -133,23 +69,35 @@
               if (grille) {
                 const remainingCards = grille.querySelectorAll('.carte');
                 if (remainingCards.length === 0) {
-                  grille.style.display = 'none';
+                  grille.classList.add('is-hidden');
                   const vide = document.querySelector('.evenements-vide');
                   if (vide) {
-                    vide.style.display = 'block';
+                    vide.classList.remove('is-hidden');
                   }
                 }
               }
             }, 300);
           }
         }
-      } else {
-        showToast(data.message || 'Une erreur est survenue.', 'error');
+        return true;
       }
     } catch (err) {
-      console.error(err);
-      showToast('Erreur de communication avec le serveur.', 'error');
+      return false;
     }
+    return false;
+  }
+
+  async function handleDateAction(button, sendNotification) {
+    const idEvenement = button.dataset.eventId;
+    const nouvelleDate = button.dataset.eventDate;
+    if (!idEvenement || !nouvelleDate) {
+      return;
+    }
+
+    return changerDateEvenement(idEvenement, nouvelleDate, {
+      sendNotification: Boolean(sendNotification),
+      message: document.getElementById('modal-message')?.value || '',
+    });
   }
 
   function setupModal() {
@@ -166,12 +114,62 @@
       return;
     }
 
+    const modalContent = modal.querySelector('.modal__content');
     let cible = null;
+    let feedbackStartedAt = 0;
+    let modalWidth = '';
+    let modalHeight = '';
+    let lastTrigger = null;
+
+    const setFeedback = (state) => {
+      if (!modalContent) {
+        return;
+      }
+
+      if (state === 'loading') {
+        feedbackStartedAt = Date.now();
+      }
+
+      modalContent.classList.add('modal__content--feedback');
+      modalContent.style.width = modalWidth;
+      modalContent.style.height = modalHeight;
+
+      let feedback = modalContent.querySelector('.modal-feedback');
+      if (!feedback) {
+        feedback = document.createElement('div');
+        feedback.className = 'modal-feedback';
+        feedback.setAttribute('role', 'status');
+        feedback.setAttribute('aria-live', 'polite');
+        feedback.innerHTML = '<img class="modal-feedback__svg" src="/static/icons/email-validation.svg" alt="" aria-hidden="true"><span class="sr-only" data-feedback-text></span>';
+        modalContent.appendChild(feedback);
+      }
+      feedback.dataset.state = state;
+      const feedbackText = feedback.querySelector('[data-feedback-text]');
+      if (feedbackText) {
+        feedbackText.textContent = state === 'loading' ? 'Envoi en cours.' : 'Email envoyé.';
+      }
+    };
+
+    const resetFeedback = () => {
+      if (!modalContent) {
+        return;
+      }
+
+      modalContent.classList.remove('modal__content--feedback');
+      modalContent.style.width = '';
+      modalContent.style.height = '';
+      modalContent.querySelector('.modal-feedback')?.remove();
+    };
 
     const openModal = (trigger) => {
-      cible = trigger.closest('form');
-      titre.textContent = trigger.dataset.confirmTitle || 'Confirmer l\'action';
-      description.textContent = trigger.dataset.confirmDescription || 'Voulez-vous confirmer cette action ?';
+      resetFeedback();
+      lastTrigger = trigger;
+      const form = trigger.closest('form');
+      cible = trigger.hasAttribute('data-date-modal')
+        ? { type: 'date', element: trigger }
+        : { type: 'form', element: form };
+      titre.textContent = trigger.dataset.modalTitle || 'Notification email';
+      description.textContent = trigger.dataset.modalDescription || 'Voulez-vous envoyer un email aux destinataires ?';
 
       const message = document.getElementById('modal-message');
       if (message) {
@@ -187,34 +185,90 @@
       }
 
       modal.showModal();
+      const rect = modalContent?.getBoundingClientRect();
+      modalWidth = rect ? `${rect.width}px` : '';
+      modalHeight = rect ? `${rect.height}px` : '';
+      if (message && btnAvecMail.style.display !== 'none') {
+        message.focus();
+      } else {
+        btnAvecMail.focus();
+      }
+    };
+
+    const restoreFocus = (trigger) => {
+      if (trigger && typeof trigger.focus === 'function' && document.contains(trigger)) {
+        trigger.focus();
+      }
+      lastTrigger = null;
     };
 
     const closeModal = () => {
-      modal.close();
+      const trigger = lastTrigger;
       cible = null;
+      resetFeedback();
+      if (modal.open) {
+        modal.close();
+      }
+      restoreFocus(trigger);
     };
 
-    const submit = (sendNotification) => {
+    const submit = async (sendNotification) => {
       if (!cible) {
         return;
       }
-      handleJsonAction(cible, sendNotification);
-      closeModal();
+
+      if (!sendNotification) {
+        if (cible.type === 'date') {
+          handleDateAction(cible.element, false);
+        } else {
+          handleFormAction(cible.element, false);
+        }
+        closeModal();
+        return;
+      }
+
+      setFeedback('loading');
+      let success = false;
+      if (cible.type === 'date') {
+        success = await handleDateAction(cible.element, true);
+      } else {
+        success = await handleFormAction(cible.element, true);
+      }
+      if (success) {
+        setFeedback('success');
+        setTimeout(closeModal, Math.max(900, 2800 - (Date.now() - feedbackStartedAt)));
+      } else {
+        closeModal();
+      }
     };
 
-    document.querySelectorAll('[data-confirm-modal]').forEach((button) => {
-      button.addEventListener('click', (event) => {
-        event.preventDefault();
-        if (emailHidden && emailError && !emailHidden.value) {
-          return;
-        }
-        openModal(button);
-      });
+    document.addEventListener('click', (event) => {
+      const button = event.target.closest('[data-confirm-modal], [data-date-modal]');
+      if (!button) {
+        return;
+      }
+      event.preventDefault();
+      if (emailHidden && emailError && !emailHidden.value) {
+        emailError.textContent = 'Ajoute au moins un destinataire avant de continuer.';
+        return;
+      }
+      if (emailError) {
+        emailError.textContent = '';
+      }
+      openModal(button);
     });
 
     btnSansMail.addEventListener('click', () => submit(false));
     btnAvecMail.addEventListener('click', () => submit(true));
     btnAnnuler.addEventListener('click', closeModal);
+    modal.addEventListener('close', () => {
+      if (cible || lastTrigger) {
+        const trigger = lastTrigger;
+        cible = null;
+        resetFeedback();
+        restoreFocus(trigger);
+      }
+    });
   }
 
   function setupEmailChips() {
@@ -232,8 +286,8 @@
 
     const normaliser = (valeur) => (valeur || '').trim().toLowerCase();
 
-    const definirErreur = () => {
-      return;
+    const definirErreur = (message = '') => {
+      emailError.textContent = message;
     };
 
     const synchroniser = () => {
@@ -250,6 +304,7 @@
       remove.type = 'button';
       remove.className = 'email-chip__remove';
       remove.textContent = '×';
+      remove.setAttribute('aria-label', `Retirer ${email}`);
       remove.addEventListener('click', () => {
         champs.delete(email);
         chip.remove();
@@ -315,6 +370,7 @@
         champs.delete(valeur);
         dernierChip.remove();
         synchroniser();
+        definirErreur('');
       }
     });
 
@@ -328,7 +384,13 @@
     });
   }
 
-  async function changerDateEvenement(idEvenement, nouvelleDate) {
+  async function changerDateEvenement(idEvenement, nouvelleDate, options = {}) {
+    const params = new URLSearchParams({
+      date: nouvelleDate,
+      send_notification: options.sendNotification ? '1' : '0',
+      message: options.message || '',
+    });
+
     try {
       const response = await fetch(`/events/${idEvenement}/date`, {
         method: 'POST',
@@ -336,7 +398,7 @@
           'Content-Type': 'application/x-www-form-urlencoded',
           'X-Requested-With': 'XMLHttpRequest',
         },
-        body: new URLSearchParams({ date: nouvelleDate }),
+        body: params,
       });
 
       const data = await response.json();
@@ -384,20 +446,17 @@
           editSuggestions.innerHTML = data.event.html_suggestions_edit;
         }
 
-        showToast(data.message, 'success');
-      } else {
-        showToast(data.message || 'Une erreur est survenue.', 'error');
+        return true;
       }
     } catch (err) {
-      console.error(err);
-      showToast('Erreur de connexion au serveur.', 'error');
+      return false;
     }
+    return false;
   }
 
   window.changerDateEvenement = changerDateEvenement;
 
   document.addEventListener('DOMContentLoaded', () => {
-    renderFlashes();
     setupModal();
     setupEmailChips();
   });

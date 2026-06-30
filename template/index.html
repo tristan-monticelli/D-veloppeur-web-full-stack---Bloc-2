@@ -23,6 +23,7 @@
 </head>
 
 <body>
+    <a class="lien-evitement" href="#contenu-principal">Aller au contenu</a>
 
     <header>
         <div class="barre-navigation">
@@ -41,7 +42,7 @@
         </div>
     </header>
 
-    <main>
+    <main id="contenu-principal">
     {# ── Bannière principale. ── #}
     <section class="banniere-principale" aria-labelledby="titre-banniere">
         <div class="banniere__contenu">
@@ -50,32 +51,32 @@
                 <p>Planifiez sereinement et envoyez vos messages facilement.</p>
 
                 {# ── Aperçu rapide des conditions météo possibles. ── #}
-                <div class="apercu-meteo">
-                    <div class="condition-meteo">
+                <ul class="apercu-meteo" aria-label="Exemples de conditions météo suivies">
+                    <li class="condition-meteo">
                         <img src="{{ url_for('static', filename='icons/clear-day-fill.svg') }}" width="56" height="56" alt="" aria-hidden="true">
                         <span>Soleil</span>
-                    </div>
-                    <div class="condition-meteo">
+                    </li>
+                    <li class="condition-meteo">
                         <img src="{{ url_for('static', filename='icons/partly-cloudy-day-fill.svg') }}" width="56" height="56" alt="" aria-hidden="true">
                         <span>Nuageux</span>
-                    </div>
-                    <div class="condition-meteo">
+                    </li>
+                    <li class="condition-meteo">
                         <img src="{{ url_for('static', filename='icons/overcast-day-fill.svg') }}" width="56" height="56" alt="" aria-hidden="true">
                         <span>Couvert</span>
-                    </div>
-                    <div class="condition-meteo">
+                    </li>
+                    <li class="condition-meteo">
                         <img src="{{ url_for('static', filename='icons/rain-fill.svg') }}" width="56" height="56" alt="" aria-hidden="true">
                         <span>Pluie</span>
-                    </div>
-                    <div class="condition-meteo">
+                    </li>
+                    <li class="condition-meteo">
                         <img src="{{ url_for('static', filename='icons/thunderstorms-fill.svg') }}" width="56" height="56" alt="" aria-hidden="true">
                         <span>Orage</span>
-                    </div>
-                    <div class="condition-meteo">
+                    </li>
+                    <li class="condition-meteo">
                         <img src="{{ url_for('static', filename='icons/hurricane-fill.svg') }}" width="56" height="56" alt="" aria-hidden="true">
                         <span>Ouragan</span>
-                    </div>
-                </div>
+                    </li>
+                </ul>
             </div>
 
             <div class="formulaire-planification">
@@ -84,18 +85,21 @@
                     Planifier un événement
                 </h2>
                 <form action="/planifier" method="POST">
-                    <div>
-                        <label for="ev-nom">Nom de l'événement</label>
-                        <input id="ev-nom" name="nom" type="text" placeholder="Ex : Barbecue familial" value="{{ brouillon_evenement.nom | default('') }}" required autocomplete="off">
-                    </div>
-                    <div>
-                        <label for="ev-date">Date</label>
-                        <input id="ev-date" name="date" type="date" value="{{ brouillon_evenement.date | default('') }}" required>
-                    </div>
-                    <div>
-                        <label for="ev-ville">Ville</label>
-                        <input id="ev-ville" name="ville" type="text" placeholder="Ex : Paris" value="{{ brouillon_evenement.ville | default('') }}" required autocomplete="off">
-                    </div>
+                    <fieldset>
+                        <legend class="sr-only">Informations de l'événement</legend>
+                        <div class="champ-formulaire">
+                            <label for="ev-nom">Nom de l'événement</label>
+                            <input id="ev-nom" name="nom" type="text" placeholder="Ex : Barbecue familial" value="{{ brouillon_evenement.nom | default('') }}" required autocomplete="off">
+                        </div>
+                        <div class="champ-formulaire">
+                            <label for="ev-date">Date</label>
+                            <input id="ev-date" name="date" type="date" value="{{ brouillon_evenement.date | default('') }}" required>
+                        </div>
+                        <div class="champ-formulaire">
+                            <label for="ev-ville">Ville</label>
+                            <input id="ev-ville" name="ville" type="text" placeholder="Ex : Paris" value="{{ brouillon_evenement.ville | default('') }}" required autocomplete="off">
+                        </div>
+                    </fieldset>
                     <button class="bouton" type="submit">Planifier</button>
                 </form>
             </div>
@@ -109,11 +113,11 @@
             Événements planifiés
         </h2>
 
-        <ul class="grille-evenements" aria-label="Liste des événements" {% if not evenements %}style="display: none;"{% endif %}>
+        <ul class="grille-evenements{% if not evenements %} is-hidden{% endif %}" aria-label="Liste des événements">
             {% for evenement in evenements %}
                 <li class="carte" data-event-id="{{ evenement.id }}">
-                    <article class="carte__contenu">
-                        <h3 class="carte-entete">{{ evenement.nom }}</h3>
+                    <article class="carte__contenu" aria-labelledby="event-title-{{ evenement.id }}">
+                        <h3 class="carte-entete" id="event-title-{{ evenement.id }}">{{ evenement.nom }}</h3>
                         <div class="carte-contenu" aria-label="{{ evenement.meteo_icone_label }}">
                             <span class="material-icons" aria-hidden="true" data-meteo-icon>
                                     {{ icone_meteo(evenement.meteo_icone_label, 52, meteo_icone=evenement.meteo_icone) }}
@@ -123,23 +127,23 @@
                             <span class="description-principale">{{ evenement.ville }}</span>
                         </div>
                         <div class="evenement-carte__actions" role="group" aria-label="Actions événement">
-                            <span class="evenement-carte__suggestions-wrapper" data-suggestions-wrapper style="display: flex; gap: 0.18rem; margin: 0; padding: 0;">
+                            <span class="evenement-carte__suggestions-wrapper" data-suggestions-wrapper>
                                 {{ render_suggestions(evenement, evenement.suggestions_date, layout='index') }}
                             </span>
                             <form class="evenement-carte__formulaire-action" action="/events/{{ evenement.id }}/edit" method="get">
-                                <button class="evenement-carte__bouton-action" type="submit" aria-label="Modifier l’événement">
+                                <button class="evenement-carte__bouton-action" type="submit" aria-label="Modifier l’événement {{ evenement.nom }}">
                                     <img src="{{ url_for('static', filename='icons/edit-2.svg') }}" width="16" height="16" alt="" aria-hidden="true">
                                 </button>
                             </form>
                             <form class="evenement-carte__formulaire-action" action="/events/{{ evenement.id }}/notify" method="post">
-                                <button class="evenement-carte__bouton-action evenement-carte__bouton-texte" type="button" data-confirm-modal data-confirm-title="Envoyer un email" data-confirm-description="Saisissez un message à envoyer aux destinataires." data-no-mail-hidden="true" aria-label="Envoyer un email">
+                                <button class="evenement-carte__bouton-action evenement-carte__bouton-texte" type="button" data-confirm-modal data-modal-title="Envoyer un email" data-modal-description="Saisissez un message à envoyer aux destinataires." data-no-mail-hidden="true" aria-label="Envoyer un email pour l’événement {{ evenement.nom }}">
                                     <img src="{{ url_for('static', filename='icons/mail.svg') }}" width="16" height="16" alt="" aria-hidden="true">
                                 </button>
                             </form>
                             <form class="evenement-carte__formulaire-action" action="/events/{{ evenement.id }}/delete" method="post">
                                 <input type="hidden" name="send_notification" value="0">
                                 <input type="hidden" name="destinataires" value="{{ evenement.email }}">
-                                <button class="evenement-carte__bouton-action" type="button" data-confirm-modal data-confirm-title="Supprimer l'événement" data-confirm-description="Confirmez-vous la suppression de cette carte ?" aria-label="Supprimer l’événement">
+                                <button class="evenement-carte__bouton-action" type="button" data-confirm-modal data-modal-title="Supprimer l'événement" data-modal-description="Voulez-vous envoyer un email aux destinataires pour cette suppression ?" aria-label="Supprimer l’événement {{ evenement.nom }}">
                                     <img src="{{ url_for('static', filename='icons/trash-2.svg') }}" width="16" height="16" alt="" aria-hidden="true">
                                 </button>
                             </form>
@@ -148,7 +152,7 @@
                 </li>
             {% endfor %}
         </ul>
-        <p class="evenements-vide" aria-live="polite" {% if evenements %}style="display: none;"{% endif %}>
+        <p class="evenements-vide{% if evenements %} is-hidden{% endif %}" aria-live="polite">
             Aucun événement planifié pour le moment.<br>
             Planifiez votre premier événement avec le formulaire ci-dessus.
         </p>
@@ -159,9 +163,9 @@
         <form method="dialog" class="modal__content">
             <p id="action-modal-title"></p>
             <p id="action-modal-description"></p>
-            <div class="champ-auth" id="modal-textarea-container" style="margin-top: 1rem; display: flex; flex-direction: column; gap: 0.3rem;">
-                <label for="modal-message" style="font-size: 0.9rem; font-weight: 600; color: var(--text-heading);">Votre message (optionnel) :</label>
-                <textarea id="modal-message" name="message" placeholder="Saisissez un message..." style="border: 1px solid #cbd5e1; border-radius: var(--radius); padding: 0.55rem 0.75rem; font-family: inherit; font-size: 0.95rem; color: var(--text-heading); resize: vertical; min-height: 80px;"></textarea>
+            <div class="champ-auth modal__champ-message" id="modal-textarea-container">
+                <label for="modal-message">Votre message (optionnel) :</label>
+                <textarea id="modal-message" name="message" placeholder="Saisissez un message..."></textarea>
             </div>
             <div class="modal__actions">
                 <button type="button" class="bouton bouton--ghost" id="action-modal-cancel">Annuler</button>
@@ -171,11 +175,6 @@
         </form>
     </dialog>
 
-    <script>
-        window.MeteoEventUI = {
-            flashes: {{ get_flashed_messages(with_categories=true)|tojson }}
-        };
-    </script>
     <script src="{{ url_for('static', filename='js/events-ui.js') }}" defer></script>
 
     <footer>

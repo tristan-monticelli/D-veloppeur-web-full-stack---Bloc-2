@@ -19,7 +19,7 @@
     {% for option in [avant, apres] %}
       {% if option %}
         <span class="evenement-carte__suggestion-slot">
-          <button class="mini-suggestion-date {{ option.classe_index }}" type="button" onclick="changerDateEvenement({{ evenement.id }}, '{{ option.date }}')" aria-label="Changer la date vers {{ option.date }}">
+          <button class="mini-suggestion-date {{ option.classe_index }}" type="button" data-date-modal data-event-id="{{ evenement.id }}" data-event-date="{{ option.date }}" data-modal-title="Modifier la date" data-modal-description="Voulez-vous envoyer un email aux destinataires pour cette nouvelle date ?" aria-label="Changer la date vers {{ option.date }}">
             <span class="suggestion-date__icone">{{ icone_meteo(option.meteo.icone_label, 14, meteo_icone=option.meteo.icone) }}</span>
             <span class="mini-suggestion-date__texte">{{ option.jours }}j</span>
           </button>
@@ -60,7 +60,7 @@
     {% endif %}
 
     {% if slot_gauche_1 %}
-      <button class="suggestion-date {{ slot_gauche_1.classe_index }} {% if not slot_gauche_2 %}suggestion-date--double{% endif %}" type="button" onclick="changerDateEvenement({{ evenement.id }}, '{{ slot_gauche_1.date }}')" aria-label="Changer la date vers {{ slot_gauche_1.date }}">
+      <button class="suggestion-date {{ slot_gauche_1.classe_index }} {% if not slot_gauche_2 %}suggestion-date--double{% endif %}" type="button" data-date-modal data-event-id="{{ evenement.id }}" data-event-date="{{ slot_gauche_1.date }}" data-modal-title="Modifier la date" data-modal-description="Voulez-vous envoyer un email aux destinataires pour cette nouvelle date ?" aria-label="Changer la date vers {{ slot_gauche_1.date }}">
         {{ slot_gauche_1.jours }}j
         <span class="suggestion-date__icone">{{ icone_meteo(slot_gauche_1.meteo.icone_label, 18, meteo_icone=slot_gauche_1.meteo.icone) }}</span>
       </button>
@@ -69,14 +69,14 @@
     {% endif %}
 
     {% if slot_gauche_2 %}
-      <button class="suggestion-date {{ slot_gauche_2.classe_index }}" type="button" onclick="changerDateEvenement({{ evenement.id }}, '{{ slot_gauche_2.date }}')" aria-label="Changer la date vers {{ slot_gauche_2.date }}">
+      <button class="suggestion-date {{ slot_gauche_2.classe_index }}" type="button" data-date-modal data-event-id="{{ evenement.id }}" data-event-date="{{ slot_gauche_2.date }}" data-modal-title="Modifier la date" data-modal-description="Voulez-vous envoyer un email aux destinataires pour cette nouvelle date ?" aria-label="Changer la date vers {{ slot_gauche_2.date }}">
         {{ slot_gauche_2.jours }}j
         <span class="suggestion-date__icone">{{ icone_meteo(slot_gauche_2.meteo.icone_label, 18, meteo_icone=slot_gauche_2.meteo.icone) }}</span>
       </button>
     {% endif %}
 
     {% if slot_droite_1 %}
-      <button class="suggestion-date {{ slot_droite_1.classe_index }} {% if not slot_droite_2 %}suggestion-date--double{% endif %}" type="button" onclick="changerDateEvenement({{ evenement.id }}, '{{ slot_droite_1.date }}')" aria-label="Changer la date vers {{ slot_droite_1.date }}">
+      <button class="suggestion-date {{ slot_droite_1.classe_index }} {% if not slot_droite_2 %}suggestion-date--double{% endif %}" type="button" data-date-modal data-event-id="{{ evenement.id }}" data-event-date="{{ slot_droite_1.date }}" data-modal-title="Modifier la date" data-modal-description="Voulez-vous envoyer un email aux destinataires pour cette nouvelle date ?" aria-label="Changer la date vers {{ slot_droite_1.date }}">
         {{ slot_droite_1.jours }}j
         <span class="suggestion-date__icone">{{ icone_meteo(slot_droite_1.meteo.icone_label, 18, meteo_icone=slot_droite_1.meteo.icone) }}</span>
       </button>
@@ -85,7 +85,7 @@
     {% endif %}
 
     {% if slot_droite_2 %}
-      <button class="suggestion-date {{ slot_droite_2.classe_index }}" type="button" onclick="changerDateEvenement({{ evenement.id }}, '{{ slot_droite_2.date }}')" aria-label="Changer la date vers {{ slot_droite_2.date }}">
+      <button class="suggestion-date {{ slot_droite_2.classe_index }}" type="button" data-date-modal data-event-id="{{ evenement.id }}" data-event-date="{{ slot_droite_2.date }}" data-modal-title="Modifier la date" data-modal-description="Voulez-vous envoyer un email aux destinataires pour cette nouvelle date ?" aria-label="Changer la date vers {{ slot_droite_2.date }}">
         {{ slot_droite_2.jours }}j
         <span class="suggestion-date__icone">{{ icone_meteo(slot_droite_2.meteo.icone_label, 18, meteo_icone=slot_droite_2.meteo.icone) }}</span>
       </button>

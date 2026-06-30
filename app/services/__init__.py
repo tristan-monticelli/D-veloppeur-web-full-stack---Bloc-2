@@ -14,11 +14,8 @@ from app.domain import (
 )
 from app.infrastructure.database import DatabaseService
 from app.services.email_service import (
-    LegacyWeb3FormsEmailService,
+    SMTPEmailService,
     EmailService,
-    DEFAULT_WEB3FORMS_ACCESS_KEY,
-    resolve_web3forms_access_key,
-    WEB3FORMS_URL,
 )
 from app.services.event_service import EventService
 from app.services.session_service import UserSessionService
@@ -36,7 +33,7 @@ __all__ = [
     'EmailDeliveryError',
     'GeocodeError',
     'GeocodeVilleInconnue',
-    'LegacyWeb3FormsEmailService',
+    'SMTPEmailService',
     'NotFoundError',
     'SuggestionSet',
     'User',
@@ -46,7 +43,4 @@ __all__ = [
     'WeatherService',
     'ReminderResult',
     'ReminderService',
-    'DEFAULT_WEB3FORMS_ACCESS_KEY',
-    'resolve_web3forms_access_key',
-    'WEB3FORMS_URL',
 ]

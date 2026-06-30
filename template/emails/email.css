@@ -1,0 +1,164 @@
+.email-body {
+  margin: 0;
+  padding: 0;
+  color: #263544;
+  font-family: Arial, Helvetica, sans-serif;
+  -webkit-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+}
+
+.preheader {
+  display: none;
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  color: transparent;
+  font-size: 1px;
+  line-height: 1px;
+}
+
+.email-shell {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.email-container {
+  width: 100%;
+  max-width: 600px;
+  border-collapse: collapse;
+}
+
+.hero {
+  background: #f7fafc;
+}
+
+.hero-band {
+  background: #2f7fa6;
+  padding: 26px 30px;
+}
+
+.weather-mark {
+  color: #ffffff;
+  font-size: 40px;
+  line-height: 42px;
+  width: 62px;
+}
+
+.eyebrow {
+  color: #d9eef7;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 16px;
+  text-transform: uppercase;
+}
+
+.email-title {
+  color: #ffffff;
+  font-size: 25px;
+  font-weight: 700;
+  line-height: 1.22;
+  margin: 5px 0 0 0;
+}
+
+.content {
+  padding: 30px;
+  background: #f7fafc;
+}
+
+.intro-line {
+  color: #263544;
+  font-size: 16px;
+  line-height: 1.55;
+  margin: 0 0 10px 0;
+}
+
+.summary {
+  width: 100%;
+  margin: 22px 0;
+  border-collapse: collapse;
+  background: #eef5f8;
+}
+
+.summary-label {
+  color: #647586;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.35;
+  padding: 10px 0 10px 18px;
+  text-transform: uppercase;
+}
+
+.summary-value {
+  color: #172231;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.35;
+  padding: 10px 18px 10px 0;
+}
+
+.note-line {
+  color: #405064;
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0 0 8px 0;
+}
+
+.actions {
+  margin-top: 24px;
+  border-collapse: collapse;
+}
+
+.action-cell {
+  padding: 0 0 10px 0;
+}
+
+.action-button {
+  background: #2f8f70;
+  color: #ffffff !important;
+  display: inline-block;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 20px;
+  padding: 12px 18px;
+  text-decoration: none;
+}
+
+.signature {
+  color: #172231;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.45;
+  margin: 24px 0 0 0;
+}
+
+.footer {
+  color: #718091;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 12px;
+  line-height: 1.45;
+  padding: 18px 0 0 0;
+  text-align: center;
+}
+
+@media only screen and (max-width: 620px) {
+  .hero-band {
+    padding: 24px 22px;
+  }
+
+  .content {
+    padding: 24px 22px;
+  }
+
+  .weather-mark {
+    width: 50px;
+    font-size: 34px;
+  }
+
+  .email-title {
+    font-size: 22px;
+  }
+
+}

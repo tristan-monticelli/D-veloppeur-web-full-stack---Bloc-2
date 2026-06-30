@@ -7,19 +7,37 @@ from app.domain import AppConfig
 from app.infrastructure.database import DatabaseService
 from app.services import (
     EventService,
-    LegacyWeb3FormsEmailService,
     ReminderService,
+    SMTPEmailService,
     UserSessionService,
     WeatherService,
-    WEB3FORMS_URL,
-    resolve_web3forms_access_key,
 )
 from app.routes import register_routes
 
 
-# Stratégie explicite choisie: source principale = variables d'environnement,
-# fallback documenté vers des valeurs de développement.
 DEFAULT_SECRET_KEY = '9f2c6a11-8b7c-4a9d-b8f9-3c2e1f7a5d9e-dev'
+DEFAULT_SMTP_PORT = '587'
+
+
+def _load_local_env(base_path: str) -> None:
+    env_path = os.path.join(base_path, '.env')
+    if not os.path.isfile(env_path):
+        return
+
+    with open(env_path, encoding='utf-8') as env_file:
+        for raw_line in env_file:
+            line = raw_line.strip()
+            if not line or line.startswith('#') or '=' not in line:
+                continue
+
+            key, value = line.split('=', 1)
+            key = key.strip()
+            value = value.strip()
+            if not key or key in os.environ:
+                continue
+            if len(value) >= 2 and value[0] == value[-1] and value[0] in {'"', "'"}:
+                value = value[1:-1]
+            os.environ[key] = value
 
 
 def _resolve_debug() -> bool:
@@ -44,8 +62,37 @@ def _resolve_secret_key() -> str:
     return DEFAULT_SECRET_KEY
 
 
+def _create_email_service(app: Flask):
+    smtp_host = os.environ.get('SMTP_HOST', '').strip()
+    smtp_username = os.environ.get('SMTP_USERNAME', '').strip()
+    smtp_password = os.environ.get('SMTP_PASSWORD', '').strip()
+    smtp_from_email = os.environ.get('SMTP_FROM_EMAIL', '').strip()
+
+    if not (smtp_host and smtp_username and smtp_password and smtp_from_email):
+        raise RuntimeError(
+            'Configuration SMTP manquante. Définissez SMTP_HOST, SMTP_USERNAME, '
+            'SMTP_PASSWORD et SMTP_FROM_EMAIL.'
+        )
+
+    try:
+        smtp_port = int(os.environ.get('SMTP_PORT', DEFAULT_SMTP_PORT))
+    except ValueError:
+        smtp_port = 587
+    smtp_use_tls = os.environ.get('SMTP_USE_TLS', '1').strip().lower() not in {'0', 'false', 'no', 'off'}
+    return SMTPEmailService(
+        host=smtp_host,
+        port=smtp_port,
+        username=smtp_username,
+        password=smtp_password,
+        from_email=smtp_from_email,
+        use_tls=smtp_use_tls,
+        logger=app.logger,
+    )
+
+
 def create_app(test_config: Mapping[str, object] | None = None) -> Flask:
     base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
+    _load_local_env(base_path)
     app = Flask(
         __name__,
         template_folder=os.path.join(base_path, 'template'),
@@ -62,11 +109,7 @@ def create_app(test_config: Mapping[str, object] | None = None) -> Flask:
     config = AppConfig()
     db_service = DatabaseService(_resolve_database_path(test_config))
     weather_service = WeatherService(db_service, config, logger=app.logger)
-    email_service = LegacyWeb3FormsEmailService(
-        resolve_web3forms_access_key(os.environ.get('WEB3FORMS_ACCESS_KEY')),
-        WEB3FORMS_URL,
-        logger=app.logger,
-    )
+    email_service = _create_email_service(app)
     reminder_service = ReminderService(db_service, weather_service, email_service, logger=app.logger)
     event_service = EventService(db_service, weather_service, email_service, config, logger=app.logger)
     user_session_service = UserSessionService()

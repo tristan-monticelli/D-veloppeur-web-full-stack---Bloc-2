@@ -1,23 +1,12 @@
-import json
-import urllib.parse
-import urllib.request
-import os
+import smtplib
+import ssl
+import re
+from email.message import EmailMessage
+from pathlib import Path
+
+from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from app.domain import EmailAddressList, EmailDeliveryError, Event, ValidationError, WeatherSnapshot
-
-
-DEFAULT_WEB3FORMS_ACCESS_KEY = 'aa012bd9-0238-41d7-8b7f-7343178f9f7f'
-WEB3FORMS_URL = 'https://api.web3forms.com/submit'
-
-
-def resolve_web3forms_access_key(raw_key: str | None = None) -> str:
-    """Résout la clé Web3Forms.
-
-    Stratégie explicite: variable d'environnement possible, sinon valeur de TP.
-    """
-    if raw_key and raw_key.strip():
-        return raw_key.strip()
-    return os.environ.get('WEB3FORMS_ACCESS_KEY', DEFAULT_WEB3FORMS_ACCESS_KEY).strip() or DEFAULT_WEB3FORMS_ACCESS_KEY
 
 
 class EmailService:
@@ -73,24 +62,35 @@ class EmailService:
         raise NotImplementedError
 
 
-class LegacyWeb3FormsEmailService(EmailService):
-    def __init__(self, access_key: str, submit_url: str, logger=None):
-        self._access_key = access_key
-        self._url = submit_url
+class SMTPEmailService(EmailService):
+    def __init__(
+        self,
+        host: str,
+        port: int,
+        username: str,
+        password: str,
+        from_email: str,
+        from_name: str = 'Météo Sentinelle',
+        use_tls: bool = True,
+        logger=None,
+    ):
+        self._host = host
+        self._port = port
+        self._username = username
+        self._password = password
+        self._from_email = from_email
+        self._from_name = from_name
+        self._use_tls = use_tls
         self._logger = logger
-        if self._logger and self._access_key == DEFAULT_WEB3FORMS_ACCESS_KEY:
-            self._logger.warning(
-                'Clé Web3Forms configurée avec la valeur par défaut (possiblement hors de votre compte). '
-                'Définissez WEB3FORMS_ACCESS_KEY avec votre propre clé dans l’environnement.'
-            )
+        self._email_template_dir = Path(__file__).resolve().parents[2] / 'template' / 'emails'
+        self._jinja = Environment(
+            loader=FileSystemLoader(str(self._email_template_dir)),
+            autoescape=select_autoescape(['html', 'xml']),
+        )
 
     def _warn(self, message: str, *args):
         if self._logger:
             self._logger.warning(message, *args)
-
-    def _error(self, message: str, *args):
-        if self._logger:
-            self._logger.error(message, *args)
 
     def _send(
         self,
@@ -100,64 +100,96 @@ class LegacyWeb3FormsEmailService(EmailService):
         nom_evenement: str = 'Événement',
         destinataires_suppl: list[str] | None = None,
     ) -> None:
-        if not self._access_key:
-            self._warn('Web3Forms non configuré — email non envoyé.')
-            return
-
         destinataires = [destinataire]
         for extra in destinataires_suppl or []:
             if extra and extra not in destinataires:
                 destinataires.append(extra)
 
         for email in destinataires:
-            donnees = json.dumps(
-                {
-                    'access_key': self._access_key,
-                    'subject': sujet,
-                    'from_name': 'Météo Sentinelle',
-                    'name': nom_evenement,
-                    'email': email,
-                    'message': message,
-                }
-            ).encode('utf-8')
-
-            requete = urllib.request.Request(
-                self._url,
-                data=donnees,
-                headers={
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                },
-                method='POST',
-            )
+            courriel = EmailMessage()
+            courriel['Subject'] = sujet
+            courriel['From'] = f'{self._from_name} <{self._from_email}>'
+            courriel['To'] = email
+            courriel.set_content(message)
+            courriel.add_alternative(self._html_template(sujet, message), subtype='html')
 
             try:
-                with urllib.request.urlopen(requete, timeout=10) as reponse:
-                    corps = reponse.read()
-                    try:
-                        retour = json.loads(corps or b'{}')
-                    except json.JSONDecodeError:
-                        self._error('Réponse Web3Forms non JSON pour %s: %r', destinataire, corps)
-                        raise EmailDeliveryError('Réponse Web3Forms invalide')
-
-                    if not retour.get('success', False):
-                        message_erreur = (
-                            retour.get('message')
-                            or (retour.get('body') or {}).get('message')
-                            or str(retour)
-                        )
-                        self._error('Erreur Web3Forms pour %s: %s', destinataire, message_erreur)
-                        raise EmailDeliveryError(str(message_erreur))
+                if self._use_tls:
+                    with smtplib.SMTP(self._host, self._port, timeout=15) as serveur:
+                        serveur.starttls(context=ssl.create_default_context())
+                        serveur.login(self._username, self._password)
+                        serveur.send_message(courriel)
+                else:
+                    with smtplib.SMTP_SSL(self._host, self._port, context=ssl.create_default_context(), timeout=15) as serveur:
+                        serveur.login(self._username, self._password)
+                        serveur.send_message(courriel)
             except Exception as erreur:
-                self._error('Erreur envoi Web3Forms : %s', erreur)
                 raise EmailDeliveryError(str(erreur)) from erreur
+
+    def _html_template(self, sujet: str, message: str) -> str:
+        template = self._jinja.get_template('base.html')
+        css_content = (self._email_template_dir / 'email.css').read_text(encoding='utf-8')
+        contexte = self._build_email_context(message)
+        return template.render(
+            css_content=css_content,
+            sujet=sujet,
+            intro=contexte['intro'],
+            details=contexte['details'],
+            actions=contexte['actions'],
+            notes=contexte['notes'],
+            app_name='Météo Sentinelle',
+        )
+
+    def _build_email_context(self, message: str) -> dict:
+        details = []
+        actions = []
+        intro = []
+        notes = []
+        url_pattern = re.compile(r'(https?://\S+)')
+
+        for raw_line in message.splitlines():
+            ligne = raw_line.strip()
+            if not ligne or ligne == '— Météo Sentinelle':
+                continue
+
+            if ligne.startswith('•'):
+                contenu = ligne.lstrip('•').strip()
+                if ':' in contenu:
+                    libelle, valeur = contenu.split(':', 1)
+                    details.append({'label': libelle.strip(), 'value': valeur.strip()})
+                else:
+                    notes.append(contenu)
+                continue
+
+            url_match = url_pattern.search(ligne)
+            if url_match:
+                url = url_match.group(1)
+                label = ligne[:url_match.start()].strip(' :') or 'Ouvrir le lien'
+                actions.append({'label': label, 'url': url})
+                continue
+
+            if ligne.endswith(':') or ligne in {'Actions :', 'Action :'}:
+                continue
+
+            if ligne == 'Bonjour,':
+                continue
+
+            if len(intro) < 2:
+                intro.append(ligne)
+            else:
+                notes.append(ligne)
+
+        return {
+            'intro': intro,
+            'details': details,
+            'actions': actions,
+            'notes': notes,
+        }
 
     def _compose_alert(self, event: Event, meteo: WeatherSnapshot, base_url: str, message_perso: str = '') -> tuple[str, str]:
         corps_perso = f"\nMessage de l'organisateur :\n{message_perso}\n" if message_perso else ''
         sujet = f"Alerte météo — {event.nom} le {event.date}"
         message = f"""
-Bonjour,
-
 Une alerte météo a été déclenchée pour votre événement :
 
   • Événement : {event.nom}
@@ -191,8 +223,6 @@ Que souhaitez-vous faire ?
         corps_perso = f"\nMessage de l'organisateur :\n{message_perso}\n" if message_perso else ''
         sujet = f"Rappel ({tag}) — {event.nom} le {event.date}"
         message = f"""
-Bonjour,
-
 Message de rappel pour votre événement :
 
   • Événement : {event.nom}
@@ -219,8 +249,6 @@ Actions :
         corps_perso = f"\nMessage de l'organisateur :\n{message_perso}\n" if message_perso else ''
         sujet = f"Alerte météo gestionnaire — {event.nom} le {event.date}"
         message = f"""
-Bonjour,
-
 Alerte météo à J-1 pour votre événement :
 
   • Événement : {event.nom}
@@ -248,8 +276,6 @@ Action :
         if event_type == 'delete':
             sujet = f"Événement supprimé — {initial.nom}"
             message = f"""
-Bonjour,
-
 L'événement suivant a été supprimé :
 
   • Événement : {initial.nom}
@@ -275,8 +301,6 @@ L'événement suivant a été supprimé :
         if changements:
             details = '\n'.join(f"  • {changement}" for changement in changements)
             message = f"""
-Bonjour,
-
 L'événement a été mis à jour :
 
 {details}
@@ -286,8 +310,6 @@ L'événement a été mis à jour :
 """.strip()
         else:
             message = f"""
-Bonjour,
-
 L'événement a été confirmé sans changement visible.
 
 {corps_perso}
@@ -379,11 +401,7 @@ L'événement a été confirmé sans changement visible.
         for destinataire in destinataires:
             self._send(destinataire, sujet, message, updated.nom)
 
-
 __all__ = [
     'EmailService',
-    'LegacyWeb3FormsEmailService',
-    'DEFAULT_WEB3FORMS_ACCESS_KEY',
-    'resolve_web3forms_access_key',
-    'WEB3FORMS_URL',
+    'SMTPEmailService',
 ]

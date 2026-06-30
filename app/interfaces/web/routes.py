@@ -153,7 +153,16 @@ def register_routes(
         if not nouvelle_date and request.is_json:
             nouvelle_date = (request.json or {}).get('date', '').strip()
 
+        send_notification = request.form.get('send_notification') == '1'
+        if not send_notification and request.is_json:
+            send_notification = (request.json or {}).get('send_notification') == '1'
+
+        message_perso = request.form.get('message', '').strip()
+        if not message_perso and request.is_json:
+            message_perso = (request.json or {}).get('message', '').strip()
+
         try:
+            ancien_evenement = event_service.get_event_for_user(id_evenement, id_utilisateur)
             evenement = event_service.change_date(id_evenement, id_utilisateur, nouvelle_date)
         except NotFoundError as erreur:
             if is_ajax:
@@ -166,11 +175,35 @@ def register_routes(
             flash(str(erreur), 'error')
             return redirect(request.referrer or url_for('web.index'))
 
+        notification_envoyee = False
+        alerte_notification = None
+        if send_notification:
+            try:
+                email_service.send_event_update_notification(
+                    ancien_evenement,
+                    evenement,
+                    'update',
+                    recipients_raw=evenement.email,
+                    message_perso=message_perso,
+                )
+                notification_envoyee = True
+            except EmailDeliveryError:
+                alerte_notification = "La date est mise à jour, mais l'email n'a pas pu être envoyé."
+
         if is_ajax:
             suggestions = event_service.build_event_suggestions(evenement)
             meteo = weather_service.get_weather(evenement.ville, nouvelle_date)
             payload = build_date_change_payload(evenement, suggestions, meteo)
+            if notification_envoyee:
+                payload['message'] = "Date mise à jour et email envoyé aux destinataires."
+            elif alerte_notification:
+                payload['message'] = alerte_notification
             return json_success(payload)
+
+        if notification_envoyee:
+            flash("Date mise à jour et email envoyé aux destinataires.", 'success')
+        elif alerte_notification:
+            flash(alerte_notification, 'error')
 
         return redirect(request.referrer or url_for('web.index'))
 
@@ -198,7 +231,7 @@ def register_routes(
                     raise ValidationError('Ajoute au moins une adresse email valide.')
                 destinataires_texte = ', '.join(destinataires)
                 ancien, _ = event_service.update_event(
-                    id_evenement=id_evenement,
+                    event_id=id_evenement,
                     user_id=id_utilisateur,
                     nom=nom,
                     date_texte=date_texte,
@@ -212,7 +245,7 @@ def register_routes(
             except GeocodeError:
                 app.logger.warning("Géocodage indisponible pour %s. La modification est conservée.", ville)
                 ancien, _ = event_service.update_event(
-                    id_evenement=id_evenement,
+                    event_id=id_evenement,
                     user_id=id_utilisateur,
                     nom=nom,
                     date_texte=date_texte,
@@ -244,8 +277,7 @@ def register_routes(
                         message_perso=request.form.get('message', '').strip(),
                     )
                     flash('Événement mis à jour et notification envoyée.', 'success')
-                except EmailDeliveryError as erreur:
-                    app.logger.error("Echec envoi email pour l'événement %s: %s", id_evenement, erreur)
+                except EmailDeliveryError:
                     flash("Événement mis à jour, mais l'email n'a pas pu être envoyé.", 'error')
             else:
                 flash('Événement mis à jour.', 'success')
@@ -263,8 +295,7 @@ def register_routes(
         )
 
     @routes.route('/events/<int:id_evenement>/notify', methods=['POST'])
-    @routes.route('/events/<int:id_evenement>/debug-email', methods=['POST'])
-    def envoyer_mail_debug(id_evenement: int):
+    def envoyer_mail_notification(id_evenement: int):
         id_utilisateur, reponse_non_autorisee = _require_auth(url_for('web.index'))
         is_ajax = _is_ajax_request()
         if reponse_non_autorisee:
@@ -292,7 +323,6 @@ def register_routes(
                 base_url=request.url_root.rstrip('/'),
             )
         except EmailDeliveryError:
-            app.logger.error("Echec envoi d'alerte pour l'événement %s", id_evenement)
             if is_ajax:
                 return json_error("Erreur d'envoi réseau de l'email.", 500)
             flash("Erreur d'envoi réseau de l'email.", 'error')
@@ -304,8 +334,8 @@ def register_routes(
         flash('Email envoyé aux destinataires.', 'success')
         return redirect(request.referrer or url_for('web.index'))
 
-    @routes.route('/debug/rappels-meteo', methods=['POST'])
-    def envoyer_rappels_debug():
+    @routes.route('/reminders/run', methods=['POST'])
+    def envoyer_rappels_manuels():
         id_utilisateur, reponse_non_autorisee = _require_auth(url_for('web.index'))
         if reponse_non_autorisee:
             return reponse_non_autorisee
@@ -366,9 +396,8 @@ def register_routes(
                     recipients_raw=request.form.get('destinataires') or evenement.email,
                     message_perso=message_perso,
                 )
-            except EmailDeliveryError as erreur:
+            except EmailDeliveryError:
                 alerte_notification = "La suppression a été appliquée, mais l'email de notification n'a pas pu être envoyé."
-                app.logger.warning("Email non envoyé lors de la suppression %s : %s", id_evenement, erreur)
 
         try:
             event_service.delete_event(id_evenement, id_utilisateur)

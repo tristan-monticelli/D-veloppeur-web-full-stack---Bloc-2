@@ -10,6 +10,7 @@
 </head>
 
 <body>
+    <a class="lien-evitement" href="#contenu-principal">Aller au contenu</a>
     <header>
         <div class="barre-navigation">
             <a href="/" class="logo">
@@ -27,7 +28,7 @@
         </div>
     </header>
 
-    <main class="page-auth">
+    <main class="page-auth" id="contenu-principal">
         <div class="auth-carte">
             <h1>Modifier l’événement</h1>
             <p class="sous-titre-auth">Mettez à jour le nom, la date et la ville.</p>
@@ -38,34 +39,37 @@
 
             <form action="/events/{{ evenement.id }}/edit" method="POST">
                 <input type="hidden" name="send_notification" value="0">
-                <div class="champ-auth">
-                    <label for="ev-nom">Nom</label>
-                    <input id="ev-nom" name="nom" type="text" value="{{ evenement.nom }}" required autocomplete="off">
-                </div>
-                <div class="champ-auth">
-                    <label for="ev-date">Date</label>
-                    <input id="ev-date" name="date" type="date" value="{{ evenement.date }}" required>
-                </div>
-                <div class="suggestions-date" id="suggestions-date-container" aria-label="Suggestions météo">
-                    {% if suggestions_date.get('avant_soleil') or suggestions_date.get('avant_proche') or suggestions_date.get('apres_soleil') or suggestions_date.get('apres_proche') %}
-                        {{ render_suggestions(evenement, suggestions_date, layout='edit') }}
-                    {% endif %}
-                </div>
-                <div class="champ-auth">
-                    <label for="ev-ville">Ville</label>
-                    <input id="ev-ville" name="ville" type="text" value="{{ evenement.ville }}" required>
-                </div>
-                <div class="champ-auth">
-                    <label for="ev-destinataires">Destinataires email</label>
-                    <div class="email-chips-field" id="email-chips-field">
-                        <div class="email-chips" id="email-chips" aria-live="polite"></div>
-                        <input id="ev-destinataires-input" type="text" inputmode="email" autocomplete="off" placeholder="Ajoutez une adresse puis Entrée ou Espace" aria-label="Ajouter un destinataire">
+                <fieldset>
+                    <legend class="sr-only">Informations de l'événement</legend>
+                    <div class="champ-auth">
+                        <label for="ev-nom">Nom</label>
+                        <input id="ev-nom" name="nom" type="text" value="{{ evenement.nom }}" required autocomplete="off">
                     </div>
-                    <small class="email-error">Ajoute chaque email en format nom@domaine.extension puis appuie sur Entrée ou Espace.</small>
-                    <div id="ev-destinataires-error" class="email-error" role="status" aria-live="polite"></div>
-                    <input type="hidden" id="ev-destinataires" name="destinataires" value="{{ evenement.email }}">
-                </div>
-                <button class="bouton" type="button" data-confirm-modal data-confirm-title="Valider la modification" data-confirm-description="Souhaitez-vous enregistrer l’événement et, si nécessaire, envoyer l’email aux destinataires ?" data-confirm-send="true">
+                    <div class="champ-auth">
+                        <label for="ev-date">Date</label>
+                        <input id="ev-date" name="date" type="date" value="{{ evenement.date }}" required>
+                    </div>
+                    <div class="suggestions-date" id="suggestions-date-container" aria-label="Suggestions météo">
+                        {% if suggestions_date.get('avant_soleil') or suggestions_date.get('avant_proche') or suggestions_date.get('apres_soleil') or suggestions_date.get('apres_proche') %}
+                            {{ render_suggestions(evenement, suggestions_date, layout='edit') }}
+                        {% endif %}
+                    </div>
+                    <div class="champ-auth">
+                        <label for="ev-ville">Ville</label>
+                        <input id="ev-ville" name="ville" type="text" value="{{ evenement.ville }}" required>
+                    </div>
+                    <div class="champ-auth">
+                        <label for="ev-destinataires-input">Destinataires email</label>
+                        <div class="email-chips-field" id="email-chips-field">
+                            <div class="email-chips" id="email-chips" aria-live="polite" aria-label="Destinataires ajoutés"></div>
+                            <input id="ev-destinataires-input" type="text" inputmode="email" autocomplete="off" placeholder="Ajoutez une adresse puis Entrée ou Espace" aria-describedby="ev-destinataires-help ev-destinataires-error">
+                        </div>
+                        <small id="ev-destinataires-help" class="email-error">Ajoute chaque email en format nom@domaine.extension puis appuie sur Entrée ou Espace.</small>
+                        <div id="ev-destinataires-error" class="email-error" role="status" aria-live="polite"></div>
+                        <input type="hidden" id="ev-destinataires" name="destinataires" value="{{ evenement.email }}">
+                    </div>
+                </fieldset>
+                <button class="bouton" type="button" data-confirm-modal data-modal-title="Enregistrer la modification" data-modal-description="Voulez-vous envoyer un email aux destinataires pour cette modification ?" data-confirm-send="true">
                     Enregistrer
                 </button>
                 <a class="bouton bouton--dark-link" href="/">Annuler</a>
@@ -73,13 +77,13 @@
         </div>
     </main>
 
-    <dialog id="action-modal" class="modal" aria-labelledby="action-modal-title">
+    <dialog id="action-modal" class="modal" aria-labelledby="action-modal-title" aria-describedby="action-modal-description">
         <form method="dialog" class="modal__content">
             <p id="action-modal-title"></p>
             <p id="action-modal-description"></p>
-            <div class="champ-auth" id="modal-textarea-container" style="margin-top: 1rem; display: flex; flex-direction: column; gap: 0.3rem;">
-                <label for="modal-message" style="font-size: 0.9rem; font-weight: 600; color: var(--text-heading);">Votre message (optionnel) :</label>
-                <textarea id="modal-message" name="message" placeholder="Saisissez un message..." style="border: 1px solid #cbd5e1; border-radius: var(--radius); padding: 0.55rem 0.75rem; font-family: inherit; font-size: 0.95rem; color: var(--text-heading); resize: vertical; min-height: 80px;"></textarea>
+            <div class="champ-auth modal__champ-message" id="modal-textarea-container">
+                <label for="modal-message">Votre message (optionnel) :</label>
+                <textarea id="modal-message" name="message" placeholder="Saisissez un message..."></textarea>
             </div>
             <div class="modal__actions">
                 <button type="button" class="bouton bouton--ghost" id="action-modal-cancel">Annuler</button>
@@ -93,11 +97,6 @@
         <p>© 2026 Météo Sentinelle — Planifiez en toute sérénité</p>
     </footer>
 
-    <script>
-        window.MeteoEventUI = {
-            flashes: {{ get_flashed_messages(with_categories=true)|tojson }}
-        };
-    </script>
     <script src="{{ url_for('static', filename='js/events-ui.js') }}" defer></script>
 </body>
 

@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="x-apple-disable-message-reformatting">
+  <title>{{ sujet }}</title>
+  <style>
+{{ css_content|safe }}
+  </style>
+</head>
+<body class="email-body" style="margin:0; padding:0;">
+  <div class="preheader">{{ sujet }}</div>
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" class="email-shell" style="width:100%; border-collapse:collapse;">
+    <tr>
+      <td align="center" style="padding:34px 14px;">
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" class="email-container" style="width:100%; max-width:600px; border-collapse:collapse;">
+          <tr>
+            <td class="hero" style="background:#f7fafc; padding:0;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;">
+                <tr>
+                  <td class="hero-band" style="background:#2f7fa6; padding:26px 30px;">
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;">
+                      <tr>
+                        <td class="weather-mark" width="62" valign="top" style="font-family:Arial, Helvetica, sans-serif;">☁</td>
+                        <td valign="top">
+                          <div class="eyebrow" style="font-family:Arial, Helvetica, sans-serif;">Mise à jour événement</div>
+                          <h1 class="email-title" style="margin:5px 0 0 0;">{{ sujet }}</h1>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td class="content" style="padding:30px; background:#f7fafc;">
+                    {% if intro %}
+                      <div class="intro">
+                        {% for ligne in intro %}
+                          <p class="intro-line" style="margin:0 0 10px 0;">{{ ligne }}</p>
+                        {% endfor %}
+                      </div>
+                    {% endif %}
+
+                    {% if details %}
+                      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" class="summary" style="width:100%; border-collapse:collapse; margin:22px 0;">
+                        {% for item in details %}
+                          <tr>
+                            <td class="summary-label" width="34%" style="padding:10px 0;">{{ item.label }}</td>
+                            <td class="summary-value" style="padding:10px 0;">{{ item.value }}</td>
+                          </tr>
+                        {% endfor %}
+                      </table>
+                    {% endif %}
+
+                    {% if notes %}
+                      <div class="notes">
+                        {% for note in notes %}
+                          <p class="note-line" style="margin:0 0 8px 0;">{{ note }}</p>
+                        {% endfor %}
+                      </div>
+                    {% endif %}
+
+                    {% if actions %}
+                      <table role="presentation" cellspacing="0" cellpadding="0" class="actions" style="border-collapse:collapse; margin-top:24px;">
+                        {% for action in actions %}
+                          <tr>
+                            <td class="action-cell" style="padding:0 0 10px 0;">
+                              <a class="action-button" href="{{ action.url }}" target="_blank">{{ action.label }}</a>
+                            </td>
+                          </tr>
+                        {% endfor %}
+                      </table>
+                    {% endif %}
+
+                    <p class="signature" style="margin:24px 0 0 0;">{{ app_name }}</p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <tr>
+            <td class="footer" style="padding:18px 0 0 0;">
+              Email automatique.
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

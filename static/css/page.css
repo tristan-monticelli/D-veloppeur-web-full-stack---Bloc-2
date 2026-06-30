@@ -54,6 +54,7 @@
   flex-wrap: wrap;
   gap: 0.75rem;
   margin-top: 0.5rem;
+  list-style: none;
 }
 
 .condition-meteo {
@@ -67,7 +68,6 @@
   font-size: 0.75rem;
   color: var(--text-heading);
   font-weight: 600;
-  backdrop-filter: blur(4px);
 }
 
 /* Formulaire */
@@ -97,6 +97,10 @@
   display: block;
 }
 
+.champ-formulaire {
+  margin-bottom: 1rem;
+}
+
 .formulaire-planification input {
   border-radius: var(--radius);
   border: 1px solid #cbd5e1;
@@ -109,7 +113,6 @@
 }
 
 .formulaire-planification input:focus {
-  outline: none;
   border-color: var(--primary);
 }
 
@@ -143,6 +146,13 @@
   background-color: var(--secondary);
   color: #fff;
   justify-self: start;
+}
+
+.evenement-carte__suggestions-wrapper {
+  display: flex;
+  gap: 0.18rem;
+  margin: 0;
+  padding: 0;
 }
 
 /* Messages */
@@ -287,6 +297,12 @@
   justify-content: center;
   cursor: pointer;
   color: currentColor;
+}
+
+.evenement-carte__bouton-action:focus-visible,
+.mini-suggestion-date:focus-visible,
+.suggestion-date:focus-visible {
+  outline-offset: 2px;
 }
 
 .evenement-carte__bouton-texte {
@@ -466,12 +482,10 @@
 }
 
 .champ-auth input:focus {
-  outline: none;
   border-color: var(--primary);
 }
 
 .champ-auth textarea:focus {
-  outline: none;
   border-color: var(--primary);
 }
 
@@ -535,8 +549,23 @@
   margin-bottom: 0.4rem;
 }
 
+.modal__champ-message {
+  margin-top: 1rem;
+}
+
+.modal__champ-message label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-heading);
+}
+
+.modal__champ-message textarea {
+  min-height: 80px;
+}
+
 .champ-auth .email-chips-field:focus-within {
-  outline: none;
+  outline: 3px solid var(--secondary);
+  outline-offset: 3px;
   border-color: var(--primary);
 }
 
@@ -591,6 +620,10 @@
   font-size: 0.95rem;
   color: var(--text-heading);
   background: transparent;
+}
+
+#ev-destinataires-input:focus-visible {
+  outline: none;
 }
 
 #ev-destinataires-input::placeholder {
@@ -699,123 +732,22 @@
   grid-column: span 2;
 }
 
-/* Toast Container */
-.toast-container {
-  position: fixed;
-  top: 1.5rem;
-  right: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  z-index: 9999;
-  pointer-events: none;
+.modal__content--feedback {
+  display: grid;
+  place-items: center;
+  background: #fff;
 }
 
-/* Toast Element */
-.toast {
-  pointer-events: auto;
-  background: var(--bg-carte);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius);
-  padding: 0.85rem 1.25rem;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  min-width: 280px;
-  max-width: 420px;
-  animation: toast-slide-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
+.modal__content--feedback > :not(.modal-feedback) {
+  display: none !important;
 }
 
-.toast--success {
-  border-left: 4px solid var(--secondary);
+.modal-feedback {
+  display: grid;
+  place-items: center;
 }
 
-
-.toast--info {
-  border-left: 4px solid var(--primary);
-}
-
-.toast__icon {
-  font-size: 1.25rem;
-  flex-shrink: 0;
-}
-
-.toast__content {
-  font-size: 0.95rem;
-  font-weight: 500;
-  color: var(--text-heading);
-  flex-grow: 1;
-  line-height: 1.4;
-}
-
-.toast__close {
-  background: none;
-  border: none;
-  color: #94a3b8;
-  cursor: pointer;
-  font-size: 1.1rem;
-  padding: 0.1rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: color 0.2s ease;
-}
-
-.toast__close:hover {
-  color: var(--text-heading);
-}
-
-.toast__progress {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  height: 3px;
-  background: rgba(0, 0, 0, 0.08);
-  width: 100%;
-  transform-origin: left;
-  animation: toast-progress-bar 4s linear forwards;
-}
-
-.toast--success .toast__progress {
-  background: rgba(43, 162, 124, 0.2);
-}
-
-
-.toast--info .toast__progress {
-  background: rgba(60, 135, 179, 0.2);
-}
-
-@keyframes toast-slide-in {
-  from {
-    transform: translateX(120%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
-@keyframes toast-slide-out {
-  from {
-    transform: translateX(0);
-    opacity: 1;
-  }
-  to {
-    transform: translateX(120%);
-    opacity: 0;
-  }
-}
-
-@keyframes toast-progress-bar {
-  from {
-    transform: scaleX(1);
-  }
-  to {
-    transform: scaleX(0);
-  }
+.modal-feedback__svg {
+  width: 6rem;
+  height: 6rem;
 }

@@ -1,5 +1,9 @@
 # Météo Sentinelle
 
+Démo en ligne : https://meteo-sentinelle.onrender.com/
+
+Note : sur l'offre gratuite Render, l'envoi d'e-mails par SMTP ne fonctionne pas car les ports SMTP courants sont bloqués. Le site reste consultable, mais les notifications e-mail ne partent pas depuis cet hébergement.
+
 Application Flask de gestion d'événements avec prévisions météo, suggestions de dates, notifications e-mail et rappels.
 
 Le projet sert à organiser des événements sensibles à la météo : l'utilisateur crée un événement, l'application récupère les prévisions, propose des dates alternatives si besoin et peut prévenir les destinataires par e-mail.
